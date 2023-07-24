@@ -5,8 +5,18 @@ import Card from "../components/Card.astro";
 
 <Layout title="act">
   <main>
-    <div class="grainy-gradient flex items-center justify-center">
+    <div class="gradient flex flex-col gap-10 items-center justify-center">
       <h1 class="text-white text-8xl font-bold glow">act</h1>
+      <h3 class="text-white text-xl font-semibold">
+        a decision making framework
+      </h3>
+      <a href="/framework"
+        ><div
+          class="bg-inherit text-white border rounded-lg py-2 px-6 hover:border-2 "
+        >
+          Learn more
+        </div></a
+      >
     </div>
   </main>
 </Layout>
@@ -17,7 +27,7 @@ import Card from "../components/Card.astro";
     margin: 0;
   }
 
-  .grainy-gradient {
+  .gradient {
     height: 100vh;
     width: 100vw;
     background: radial-gradient(
