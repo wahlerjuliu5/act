@@ -19,6 +19,12 @@ htmlcov/
 venv/
 env/
 
+# Model weights (never commit these)
+models/
+*.gguf
+*.bin
+*.safetensors
+
 # macOS
 .DS_Store
 
