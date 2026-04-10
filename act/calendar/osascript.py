@@ -5,6 +5,42 @@ from datetime import date, datetime
 
 from act.models import CalendarEvent
 
+_CREATE_EVENT_SCRIPT_TMPL = """\
+tell application "Calendar"
+    set targetCal to first calendar whose name is "{cal_name}"
+
+    set startDate to current date
+    set year of startDate to {start_year}
+    set month of startDate to {start_month}
+    set day of startDate to {start_day}
+    set time of startDate to {start_seconds}
+
+    set endDate to current date
+    set year of endDate to {end_year}
+    set month of endDate to {end_month}
+    set day of endDate to {end_day}
+    set time of endDate to {end_seconds}
+
+    set newEvent to make new event at end of events of targetCal ¬
+        with properties {{summary:"{title}", start date:startDate, end date:endDate}}
+    {set_notes}
+    return uid of newEvent
+end tell
+"""
+
+_DELETE_EVENT_SCRIPT_TMPL = """\
+tell application "Calendar"
+    repeat with cal in calendars
+        set matchingEvents to (events of cal whose uid is "{event_id}")
+        if (count of matchingEvents) > 0 then
+            delete item 1 of matchingEvents
+            return "deleted"
+        end if
+    end repeat
+    return "not_found"
+end tell
+"""
+
 # ---------------------------------------------------------------------------
 # AppleScript templates
 # ---------------------------------------------------------------------------
@@ -134,9 +170,49 @@ def get_events(
     return parse_events_output(output)
 
 
+def create_event(
+    title: str,
+    start: datetime,
+    end: datetime,
+    calendar: str,
+    notes: str | None = None,
+) -> str:
+    """Create a Calendar event and return its UID."""
+    set_notes = (
+        f'set description of newEvent to "{_esc(notes)}"'
+        if notes
+        else ""
+    )
+    script = _CREATE_EVENT_SCRIPT_TMPL.format(
+        cal_name=_esc(calendar),
+        title=_esc(title),
+        start_year=start.year,
+        start_month=start.month,
+        start_day=start.day,
+        start_seconds=start.hour * 3600 + start.minute * 60 + start.second,
+        end_year=end.year,
+        end_month=end.month,
+        end_day=end.day,
+        end_seconds=end.hour * 3600 + end.minute * 60 + end.second,
+        set_notes=set_notes,
+    )
+    return _run_script(script).strip()
+
+
+def delete_event(event_id: str) -> str:
+    """Delete a Calendar event by UID. Returns 'deleted' or 'not_found'."""
+    script = _DELETE_EVENT_SCRIPT_TMPL.format(event_id=_esc(event_id))
+    return _run_script(script).strip()
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _esc(s: str) -> str:
+    """Escape a string for safe inclusion inside an AppleScript double-quoted string."""
+    return s.replace("\\", "\\\\").replace('"', '\\"')
 
 
 def _run_script(script: str) -> str:

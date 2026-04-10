@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -74,6 +74,29 @@ def test_query_response_confidence_bounds() -> None:
 # ---------------------------------------------------------------------------
 # build_system_prompt — unit tests
 # ---------------------------------------------------------------------------
+
+
+def test_system_prompt_contains_tomorrow_iso_date() -> None:
+    """System prompt must include the ISO date for 'tomorrow' so the model doesn't compute it."""
+    tomorrow_iso = (date.today() + timedelta(days=1)).isoformat()
+    prompt = build_system_prompt([], [], "09:00", "18:00")
+    assert tomorrow_iso in prompt, f"Expected {tomorrow_iso} in prompt"
+    assert "Tomorrow" in prompt
+
+
+def test_system_prompt_date_anchors_cover_7_days() -> None:
+    """All 8 date anchors (today through +7 days) must appear as ISO strings."""
+    today = date.today()
+    prompt = build_system_prompt([], [], "09:00", "18:00")
+    for offset in range(8):
+        iso = (today + timedelta(days=offset)).isoformat()
+        assert iso in prompt, f"Missing date anchor for +{offset} days: {iso}"
+
+
+def test_system_prompt_tells_model_not_to_compute_dates() -> None:
+    """Prompt must instruct the model to use the provided dates, not compute them."""
+    prompt = build_system_prompt([], [], "09:00", "18:00")
+    assert "do NOT compute" in prompt or "do not compute" in prompt.lower()
 
 
 def test_system_prompt_contains_calendars() -> None:
